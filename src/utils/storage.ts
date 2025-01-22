@@ -44,15 +44,15 @@ export const exportToExcel = (summary: DailySummary) => {
   // Create sales worksheet
   const salesData = [
     ['Date', summary.date],
-    ['Total Sales', `₹${summary.totalSales}`],
-    ['Counter Sales', `₹${summary.counterSales}`],
-    ['Supply Sales', `₹${summary.supplySales}`],
+    ['Total Sales', `₹${summary.totalSales.toString()}`],
+    ['Counter Sales', `₹${summary.counterSales.toString()}`],
+    ['Supply Sales', `₹${summary.supplySales.toString()}`],
     [],
     ['Product', 'Quantity Sold', 'Amount']
   ];
   
   summary.products.forEach(product => {
-    salesData.push([product.name, product.quantity, `₹${product.amount}`]);
+    salesData.push([product.name, product.quantity, `₹${product.amount.toString()}`]);
   });
   
   const ws = XLSX.utils.aoa_to_sheet(salesData);
