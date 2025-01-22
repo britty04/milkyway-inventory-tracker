@@ -30,7 +30,7 @@ export const addProduct = (product: Omit<Product, 'id'>) => {
   const products = getProducts();
   const newProduct = {
     ...product,
-    id: Date.now().toString() // Convert the timestamp to string
+    id: Date.now().toString()
   };
   products.push(newProduct);
   saveProducts(products);
@@ -43,10 +43,15 @@ export const removeProduct = (id: string) => {
   saveProducts(updatedProducts);
 };
 
-export const saveSale = (sale: Sale) => {
+export const saveSale = (sale: Omit<Sale, 'id'>) => {
   const sales = getSales();
-  sales.push(sale);
+  const newSale = {
+    ...sale,
+    id: Date.now().toString()
+  };
+  sales.push(newSale);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+  return newSale;
 };
 
 export const getSales = (): Sale[] => {

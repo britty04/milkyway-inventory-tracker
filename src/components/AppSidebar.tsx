@@ -1,6 +1,6 @@
-import { Package, DollarSign, BarChart3, LogOut, Settings } from "lucide-react";
+import { Package, DollarSign, BarChart3, LogOut, Settings, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -16,21 +16,26 @@ import {
 export function AppSidebar() {
   const { role, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const adminMenuItems = [
-    { title: "Inventory", icon: Package },
-    { title: "Sales", icon: DollarSign },
-    { title: "Reports", icon: BarChart3 },
-    { title: "Settings", icon: Settings },
+    { title: "Inventory", icon: Package, path: "/inventory" },
+    { title: "Sales", icon: DollarSign, path: "/sales" },
+    { title: "Monthly Reports", icon: FileText, path: "/reports" },
+    { title: "Settings", icon: Settings, path: "/settings" },
   ];
 
   const employeeMenuItems = [
-    { title: "Sales", icon: DollarSign },
+    { title: "Sales", icon: DollarSign, path: "/sales" },
   ];
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
   };
 
   const menuItems = role === 'admin' ? adminMenuItems : employeeMenuItems;
@@ -44,7 +49,10 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton>
+                  <SidebarMenuButton 
+                    onClick={() => handleNavigation(item.path)}
+                    data-active={location.pathname === item.path}
+                  >
                     <item.icon className="w-4 h-4 mr-2" />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
