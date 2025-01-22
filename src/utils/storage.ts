@@ -30,7 +30,7 @@ export const addProduct = (product: Omit<Product, 'id'>) => {
   const products = getProducts();
   const newProduct = {
     ...product,
-    id: Date.now().toString()
+    id: Date.now().toString() // Convert the timestamp to string
   };
   products.push(newProduct);
   saveProducts(products);
