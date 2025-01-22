@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -31,19 +32,21 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-bold text-blue-600">NAYRA MILK AGENCIES</CardTitle>
-          <p className="text-gray-600">Sign in to your account</p>
+          <CardTitle className="text-3xl font-bold text-blue-600">
+            NAYRA MILK AGENCIES
+          </CardTitle>
+          <CardDescription className="text-gray-600 text-lg">
+            Welcome back! Please sign in to continue.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="username" className="text-sm font-medium text-gray-700">
-                  Username
-                </label>
+                <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
                   type="text"
@@ -55,9 +58,7 @@ const Login = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Password
-                </label>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -69,7 +70,7 @@ const Login = () => {
                 />
               </div>
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full text-lg py-6">
               Sign in
             </Button>
           </form>

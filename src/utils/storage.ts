@@ -30,7 +30,7 @@ export const addProduct = (product: Omit<Product, 'id'>) => {
   const products = getProducts();
   const newProduct = {
     ...product,
-    id: Date.now().toString()
+    id: Date.now().toString() // Convert timestamp to string
   };
   products.push(newProduct);
   saveProducts(products);
@@ -43,11 +43,11 @@ export const removeProduct = (id: string) => {
   saveProducts(updatedProducts);
 };
 
-export const saveSale = (sale: Omit<Sale, 'id'>) => {
+export const saveSale = (sale: Sale) => {
   const sales = getSales();
   const newSale = {
     ...sale,
-    id: Date.now().toString()
+    id: Date.now().toString() // Convert timestamp to string
   };
   sales.push(newSale);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
@@ -92,4 +92,28 @@ export const exportToExcel = (summary: DailySummary) => {
   
   // Save the file
   XLSX.writeFile(wb, `sales-report-${summary.date}.xlsx`);
+};
+
+// Add backup functionality
+export const backupData = () => {
+  const backup = {
+    products: getProducts(),
+    sales: getSales(),
+    summaries: getDailySummaries(),
+    timestamp: new Date().toISOString()
+  };
+  
+  localStorage.setItem('nayra_backup', JSON.stringify(backup));
+  return backup;
+};
+
+export const restoreFromBackup = () => {
+  const backupData = localStorage.getItem('nayra_backup');
+  if (!backupData) return false;
+  
+  const backup = JSON.parse(backupData);
+  saveProducts(backup.products);
+  localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(backup.sales));
+  localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(backup.summaries));
+  return true;
 };
