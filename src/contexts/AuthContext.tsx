@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRole('admin');
       localStorage.setItem('userRole', 'admin');
       return true;
-    } else if (username) {
+    } else if (username === 'nayra' && password === 'nayra123') {
       setRole('employee');
       localStorage.setItem('userRole', 'employee');
       return true;

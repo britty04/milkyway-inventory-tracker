@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Product } from "@/types/inventory";
-import { getProducts, saveProducts } from "@/utils/storage";
+import { getProducts, saveProducts, addProduct, removeProduct } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Trash2 } from "lucide-react";
 
 export function StockManager() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [newProduct, setNewProduct] = useState({ name: "", stock: 0, price: 0, unit: "" });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -22,6 +24,33 @@ export function StockManager() {
       return product;
     });
     setProducts(updated);
+  };
+
+  const handleAddProduct = () => {
+    if (!newProduct.name || !newProduct.unit) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    const product = addProduct(newProduct);
+    setProducts([...products, product]);
+    setNewProduct({ name: "", stock: 0, price: 0, unit: "" });
+    toast({
+      title: "Product Added",
+      description: "New product has been added successfully.",
+    });
+  };
+
+  const handleRemoveProduct = (id: string) => {
+    removeProduct(id);
+    setProducts(products.filter(p => p.id !== id));
+    toast({
+      title: "Product Removed",
+      description: "The product has been removed successfully.",
+    });
   };
 
   const saveChanges = () => {
@@ -39,6 +68,37 @@ export function StockManager() {
         <Button onClick={saveChanges}>Save Changes</Button>
       </div>
 
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
+        <div className="grid grid-cols-5 gap-4">
+          <Input
+            placeholder="Product Name"
+            value={newProduct.name}
+            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+          />
+          <Input
+            type="number"
+            placeholder="Stock"
+            value={newProduct.stock}
+            onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })}
+          />
+          <Input
+            type="number"
+            placeholder="Price"
+            value={newProduct.price}
+            onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+          />
+          <Input
+            placeholder="Unit (e.g., packet, bottle)"
+            value={newProduct.unit}
+            onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+          />
+          <Button onClick={handleAddProduct} className="w-full">
+            <Plus className="w-4 h-4 mr-2" /> Add Product
+          </Button>
+        </div>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -46,6 +106,7 @@ export function StockManager() {
             <TableHead>Stock</TableHead>
             <TableHead>Price (₹)</TableHead>
             <TableHead>Unit</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -69,6 +130,15 @@ export function StockManager() {
                 />
               </TableCell>
               <TableCell>{product.unit}</TableCell>
+              <TableCell>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => handleRemoveProduct(product.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

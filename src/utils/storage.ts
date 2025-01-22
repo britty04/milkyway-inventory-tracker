@@ -2,9 +2,9 @@ import { Product, Sale, DailySummary } from "@/types/inventory";
 import * as XLSX from 'xlsx';
 
 const STORAGE_KEYS = {
-  PRODUCTS: 'arokya_products',
-  SALES: 'arokya_sales',
-  SUMMARIES: 'arokya_summaries'
+  PRODUCTS: 'nayra_products',
+  SALES: 'nayra_sales',
+  SUMMARIES: 'nayra_summaries'
 };
 
 export const saveProducts = (products: Product[]) => {
@@ -13,7 +13,34 @@ export const saveProducts = (products: Product[]) => {
 
 export const getProducts = (): Product[] => {
   const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-  return data ? JSON.parse(data) : [];
+  if (!data) {
+    // Initialize with default products if none exist
+    const defaultProducts: Product[] = [
+      { id: '1', name: 'Milk', stock: 100, price: 30, unit: 'packet' },
+      { id: '2', name: 'Curd', stock: 50, price: 25, unit: 'packet' },
+      { id: '3', name: 'Buttermilk', stock: 30, price: 15, unit: 'bottle' }
+    ];
+    saveProducts(defaultProducts);
+    return defaultProducts;
+  }
+  return JSON.parse(data);
+};
+
+export const addProduct = (product: Omit<Product, 'id'>) => {
+  const products = getProducts();
+  const newProduct = {
+    ...product,
+    id: Date.now().toString()
+  };
+  products.push(newProduct);
+  saveProducts(products);
+  return newProduct;
+};
+
+export const removeProduct = (id: string) => {
+  const products = getProducts();
+  const updatedProducts = products.filter(product => product.id !== id);
+  saveProducts(updatedProducts);
 };
 
 export const saveSale = (sale: Sale) => {
@@ -44,15 +71,15 @@ export const exportToExcel = (summary: DailySummary) => {
   // Create sales worksheet
   const salesData = [
     ['Date', summary.date],
-    ['Total Sales', `₹${summary.totalSales.toString()}`],
-    ['Counter Sales', `₹${summary.counterSales.toString()}`],
-    ['Supply Sales', `₹${summary.supplySales.toString()}`],
+    ['Total Sales', `₹${summary.totalSales}`],
+    ['Counter Sales', `₹${summary.counterSales}`],
+    ['Supply Sales', `₹${summary.supplySales}`],
     [],
     ['Product', 'Quantity Sold', 'Amount']
   ];
   
   summary.products.forEach(product => {
-    salesData.push([product.name, product.quantity, `₹${product.amount.toString()}`]);
+    salesData.push([product.name, product.quantity, `₹${product.amount}`]);
   });
   
   const ws = XLSX.utils.aoa_to_sheet(salesData);
