@@ -9,7 +9,107 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      daily_summaries: {
+        Row: {
+          counter_sales: number
+          created_at: string
+          date: string
+          id: string
+          products: Json
+          supply_sales: number
+          total_sales: number
+        }
+        Insert: {
+          counter_sales?: number
+          created_at?: string
+          date: string
+          id?: string
+          products?: Json
+          supply_sales?: number
+          total_sales?: number
+        }
+        Update: {
+          counter_sales?: number
+          created_at?: string
+          date?: string
+          id?: string
+          products?: Json
+          supply_sales?: number
+          total_sales?: number
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          price: number
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          price?: number
+          stock?: number
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          product_id: string | null
+          quantity: number
+          synced: boolean | null
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity: number
+          synced?: boolean | null
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          synced?: boolean | null
+          timestamp?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

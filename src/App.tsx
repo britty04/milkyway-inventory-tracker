@@ -10,11 +10,42 @@ import Inventory from "./pages/Inventory";
 import Sales from "./pages/Sales";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import { useEffect } from "react";
+import { syncPendingSales } from "./utils/storage";
+import { useToast } from "./components/ui/use-toast";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { role } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const handleOnline = () => {
+      toast({
+        title: "Back Online",
+        description: "Syncing pending data...",
+      });
+      syncPendingSales();
+    };
+
+    const handleOffline = () => {
+      toast({
+        title: "Offline Mode",
+        description: "Changes will be synced when back online",
+        variant: "destructive",
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [toast]);
+
   if (!role) {
     return <Navigate to="/login" />;
   }
