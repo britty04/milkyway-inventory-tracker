@@ -14,7 +14,6 @@ export const saveProducts = (products: Product[]) => {
 export const getProducts = (): Product[] => {
   const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
   if (!data) {
-    // Initialize with default products if none exist
     const defaultProducts: Product[] = [
       { id: '1', name: 'Milk', stock: 100, price: 30, unit: 'packet' },
       { id: '2', name: 'Curd', stock: 50, price: 25, unit: 'packet' },
@@ -30,7 +29,7 @@ export const addProduct = (product: Omit<Product, 'id'>) => {
   const products = getProducts();
   const newProduct = {
     ...product,
-    id: Date.now().toString() // Convert timestamp to string
+    id: Date.now().toString() // Fixed: Convert timestamp to string
   };
   products.push(newProduct);
   saveProducts(products);
@@ -47,7 +46,7 @@ export const saveSale = (sale: Sale) => {
   const sales = getSales();
   const newSale = {
     ...sale,
-    id: Date.now().toString() // Convert timestamp to string
+    id: Date.now().toString() // Fixed: Convert timestamp to string
   };
   sales.push(newSale);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
