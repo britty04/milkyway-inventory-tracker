@@ -4,13 +4,15 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { getDailySummaries, getSales } from "@/utils/storage";
+import { getDailySummaries, getSales, getProducts } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Reports = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const summaries = getDailySummaries();
   const sales = getSales();
+  const isMobile = useIsMobile();
 
   const getMonthlyTotal = () => {
     if (!selectedDate) return 0;
@@ -36,9 +38,9 @@ const Reports = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <main className="flex-1 p-4 md:p-6 space-y-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6 overflow-x-hidden">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
+            <Card className="col-span-full md:col-span-1">
               <CardHeader>
                 <CardTitle>Monthly Total</CardTitle>
               </CardHeader>
@@ -50,7 +52,7 @@ const Reports = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={`${isMobile ? 'col-span-full' : 'md:col-span-1'}`}>
               <CardHeader>
                 <CardTitle>Calendar View</CardTitle>
               </CardHeader>
@@ -73,7 +75,7 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto -mx-4 md:mx-0">
                   <Table>
                     <TableHeader>
                       <TableRow>

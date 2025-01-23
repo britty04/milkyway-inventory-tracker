@@ -42,11 +42,11 @@ export const removeProduct = (id: string) => {
   saveProducts(updatedProducts);
 };
 
-export const saveSale = (sale: Sale) => {
+export const saveSale = (sale: Omit<Sale, 'id'>) => {
   const sales = getSales();
   const newSale = {
     ...sale,
-    id: Date.now().toString() // Fixed: Convert timestamp to string
+    id: Date.now().toString() // Convert timestamp to string
   };
   sales.push(newSale);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
