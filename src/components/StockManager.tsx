@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Product } from "@/types/inventory";
-import { getProducts, saveProducts, addProduct, removeProduct } from "@/utils/storage";
+import { getProducts, saveProducts, addProduct, removeProduct } from "@/utils/storage/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 

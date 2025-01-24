@@ -61,16 +61,25 @@ export const addProduct = async (product: Omit<Product, 'id'>): Promise<Product>
   
   if (navigator.onLine) {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .insert([{
+          id: newProduct.id,
           name: newProduct.name,
           stock: Number(newProduct.stock),
           price: Number(newProduct.price),
           unit: newProduct.unit
-        }]);
+        }])
+        .select()
+        .single();
       
       if (error) throw error;
+      if (data) {
+        const products = await getProducts();
+        products.push(data as Product);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+        return data as Product;
+      }
     } catch (error) {
       console.error('Error adding product:', error);
     }
