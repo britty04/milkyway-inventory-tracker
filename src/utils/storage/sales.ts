@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Sale } from "@/types/inventory";
 
 const STORAGE_KEY = 'nayra_sales';
+const PENDING_SYNC_KEY = 'nayra_pending_sync';
 
 export const saveSale = async (sale: Sale) => {
   const sales = await getSales();
@@ -9,21 +10,11 @@ export const saveSale = async (sale: Sale) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sales));
   
   if (navigator.onLine) {
-    try {
-      const { error } = await supabase
-        .from('sales')
-        .insert([{
-          product_id: sale.productId,
-          quantity: Number(sale.quantity),
-          amount: Number(sale.amount),
-          type: sale.type,
-          timestamp: sale.timestamp
-        }]);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error saving sale:', error);
-    }
+    await syncSale(sale);
+  } else {
+    const pendingSync = JSON.parse(localStorage.getItem(PENDING_SYNC_KEY) || '[]');
+    pendingSync.push(sale);
+    localStorage.setItem(PENDING_SYNC_KEY, JSON.stringify(pendingSync));
   }
   
   return sale;
@@ -56,4 +47,39 @@ export const getSales = async (): Promise<Sale[]> => {
   
   const data = localStorage.getItem(STORAGE_KEY);
   return data ? JSON.parse(data) : [];
+};
+
+export const syncSale = async (sale: Sale) => {
+  try {
+    const { error } = await supabase
+      .from('sales')
+      .insert([{
+        id: sale.id,
+        product_id: sale.productId,
+        quantity: Number(sale.quantity),
+        amount: Number(sale.amount),
+        type: sale.type,
+        timestamp: sale.timestamp
+      }]);
+    
+    if (!error) {
+      const sales = await getSales();
+      const updatedSales = sales.map(s => 
+        s.id === sale.id ? { ...s, synced: true } : s
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSales));
+    }
+  } catch (error) {
+    console.error('Error syncing sale:', error);
+  }
+};
+
+export const syncPendingSales = async () => {
+  const pendingSync = JSON.parse(localStorage.getItem(PENDING_SYNC_KEY) || '[]');
+  
+  for (const sale of pendingSync) {
+    await syncSale(sale);
+  }
+  
+  localStorage.setItem(PENDING_SYNC_KEY, '[]');
 };
