@@ -5,11 +5,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { Product } from "@/types/inventory";
 import { getProducts, saveProducts, addProduct, removeProduct } from "@/utils/storage/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Package } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export function StockManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [newProduct, setNewProduct] = useState({ name: "", stock: 0, price: 0, unit: "" });
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,6 +67,25 @@ export function StockManager() {
     });
   };
 
+  const getCategory = (name: string): string => {
+    if (name.startsWith('FCM')) return 'Milk';
+    if (name.includes('CURD') || name.includes('LASSI') || name.includes('YOGURT')) return 'Curd & Dairy';
+    if (name.startsWith('ICE STICK')) return 'Ice Sticks';
+    if (name.startsWith('ICE CUP')) return 'Ice Cups';
+    if (name.startsWith('ICE CONE') || name.includes('BALL') || name.includes('SLICE')) return 'Special Ice Cream';
+    if (name.startsWith('BITES')) return 'Ice Cream Bites';
+    if (name.startsWith('FAMILY PACK')) return 'Family Packs';
+    if (name.includes('CHEESE') || name.includes('BUTTER') || name.includes('PANNEER')) return 'Cheese & Butter';
+    return 'Other';
+  };
+
+  const categories = ['all', 'Milk', 'Curd & Dairy', 'Ice Sticks', 'Ice Cups', 'Special Ice Cream', 
+    'Ice Cream Bites', 'Family Packs', 'Cheese & Butter', 'Other'];
+
+  const filteredProducts = selectedCategory === 'all' 
+    ? products 
+    : products.filter(p => getCategory(p.name) === selectedCategory);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -72,82 +93,104 @@ export function StockManager() {
         <Button onClick={saveChanges}>Save Changes</Button>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Input
-            placeholder="Product Name"
-            value={newProduct.name}
-            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-          />
-          <Input
-            type="number"
-            placeholder="Stock"
-            value={newProduct.stock}
-            onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })}
-          />
-          <Input
-            type="number"
-            placeholder="Price"
-            value={newProduct.price}
-            onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
-          />
-          <Input
-            placeholder="Unit (e.g., packet, bottle)"
-            value={newProduct.unit}
-            onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-          />
-          <Button onClick={handleAddProduct} className="w-full">
-            <Plus className="w-4 h-4 mr-2" /> Add Product
+      <Card>
+        <CardHeader>
+          <CardTitle>Add New Product</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Input
+              placeholder="Product Name"
+              value={newProduct.name}
+              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+            />
+            <Input
+              type="number"
+              placeholder="Stock"
+              value={newProduct.stock}
+              onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })}
+            />
+            <Input
+              type="number"
+              placeholder="Price"
+              value={newProduct.price}
+              onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+            />
+            <Input
+              placeholder="Unit (e.g., packet, bottle)"
+              value={newProduct.unit}
+              onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+            />
+            <Button onClick={handleAddProduct} className="w-full">
+              <Plus className="w-4 h-4 mr-2" /> Add Product
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {categories.map((category) => (
+          <Button
+            key={category}
+            variant={selectedCategory === category ? "default" : "outline"}
+            onClick={() => setSelectedCategory(category)}
+            className="whitespace-nowrap"
+          >
+            <Package className="w-4 h-4 mr-2" />
+            {category.charAt(0).toUpperCase() + category.slice(1)}
           </Button>
-        </div>
+        ))}
       </div>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Price (₹)</TableHead>
-              <TableHead>Unit</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {products.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>{product.name}</TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={product.stock}
-                    onChange={(e) => updateProduct(product.id, 'stock', e.target.value)}
-                    className="w-24"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    value={product.price}
-                    onChange={(e) => updateProduct(product.id, 'price', e.target.value)}
-                    className="w-24"
-                  />
-                </TableCell>
-                <TableCell>{product.unit}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleRemoveProduct(product.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </TableCell>
+      <div className="bg-white rounded-lg shadow">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Price (₹)</TableHead>
+                <TableHead>Unit</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell>{getCategory(product.name)}</TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={product.stock}
+                      onChange={(e) => updateProduct(product.id, 'stock', e.target.value)}
+                      className="w-24"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={product.price}
+                      onChange={(e) => updateProduct(product.id, 'price', e.target.value)}
+                      className="w-24"
+                    />
+                  </TableCell>
+                  <TableCell>{product.unit}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleRemoveProduct(product.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
