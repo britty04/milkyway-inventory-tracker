@@ -36,19 +36,17 @@ export const saveProducts = async (products: Product[]) => {
   
   if (navigator.onLine) {
     try {
-      for (const product of products) {
-        const { error } = await supabase
-          .from('products')
-          .upsert({
-            id: product.id,
-            name: product.name,
-            stock: Number(product.stock),
-            price: Number(product.price),
-            unit: product.unit
-          });
-        
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from('products')
+        .upsert(products.map(p => ({
+          id: p.id,
+          name: p.name,
+          stock: Number(p.stock),
+          price: Number(p.price),
+          unit: p.unit
+        })));
+      
+      if (error) throw error;
     } catch (error) {
       console.error('Error saving products:', error);
     }
@@ -63,24 +61,16 @@ export const addProduct = async (product: Omit<Product, 'id'>): Promise<Product>
   
   if (navigator.onLine) {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
         .insert([{
           name: newProduct.name,
           stock: Number(newProduct.stock),
           price: Number(newProduct.price),
           unit: newProduct.unit
-        }])
-        .select()
-        .single();
+        }]);
       
       if (error) throw error;
-      if (data) {
-        const products = await getProducts();
-        products.push(data as Product);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-        return data as Product;
-      }
     } catch (error) {
       console.error('Error adding product:', error);
     }

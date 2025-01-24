@@ -1,3 +1,4 @@
+import { Product, Sale, DailySummary } from "@/types/inventory";
 import { getProducts } from './products';
 import { getSales } from './sales';
 import { getDailySummaries } from './summaries';
