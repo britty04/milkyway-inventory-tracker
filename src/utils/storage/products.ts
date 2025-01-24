@@ -43,7 +43,8 @@ export const saveProducts = async (products: Product[]) => {
           name: p.name,
           stock: Number(p.stock),
           price: Number(p.price),
-          unit: p.unit
+          unit: p.unit,
+          updated_at: new Date().toISOString()
         })));
       
       if (error) throw error;
