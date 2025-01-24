@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,17 +7,25 @@ import { getProducts, saveSale } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export function SalesRecorder() {
-  const [products] = useState<Product[]>(getProducts());
+  const [products, setProducts] = useState<Product[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [saleType, setSaleType] = useState<'counter' | 'supply'>('counter');
   const { toast } = useToast();
 
-  const recordSale = (productId: string, quantity: number) => {
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const fetchedProducts = await getProducts();
+      setProducts(fetchedProducts);
+    };
+    fetchProducts();
+  }, []);
+
+  const recordSale = async (productId: string, quantity: number) => {
     const product = products.find(p => p.id === productId);
     if (!product || quantity <= 0) return;
 
     const sale: Sale = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       productId,
       quantity,
       amount: quantity * product.price,
@@ -25,7 +33,7 @@ export function SalesRecorder() {
       timestamp: new Date().toISOString(),
     };
 
-    saveSale(sale);
+    await saveSale(sale);
     setQuantities(prev => ({ ...prev, [productId]: 0 }));
     
     toast({

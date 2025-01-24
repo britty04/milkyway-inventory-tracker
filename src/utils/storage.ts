@@ -14,16 +14,18 @@ const STORAGE_KEYS = {
 export const saveProducts = async (products: Product[]) => {
   localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   
-  // If online, sync with Supabase
   if (navigator.onLine) {
     try {
-      await supabase.from('products').upsert(
+      const { error } = await supabase.from('products').upsert(
         products.map(p => ({
-          ...p,
+          id: p.id,
+          name: p.name,
           price: Number(p.price),
-          stock: Number(p.stock)
+          stock: Number(p.stock),
+          unit: p.unit
         }))
       );
+      if (error) throw error;
     } catch (error) {
       console.error('Error syncing products:', error);
     }
@@ -31,7 +33,6 @@ export const saveProducts = async (products: Product[]) => {
 };
 
 export const getProducts = async (): Promise<Product[]> => {
-  // Try to get from Supabase first if online
   if (navigator.onLine) {
     try {
       const { data, error } = await supabase
@@ -40,33 +41,55 @@ export const getProducts = async (): Promise<Product[]> => {
         .order('name');
       
       if (!error && data) {
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(data));
-        return data;
+        const products = data.map(p => ({
+          id: p.id,
+          name: p.name,
+          stock: p.stock,
+          price: p.price,
+          unit: p.unit
+        }));
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+        return products;
       }
     } catch (error) {
       console.error('Error fetching products:', error);
     }
   }
   
-  // Fallback to local storage
   const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-  if (!data) {
-    const defaultProducts: Product[] = [
-      { id: '1', name: 'Milk', stock: 100, price: 30, unit: 'packet' },
-      { id: '2', name: 'Curd', stock: 50, price: 25, unit: 'packet' },
-      { id: '3', name: 'Buttermilk', stock: 30, price: 15, unit: 'bottle' }
-    ];
-    await saveProducts(defaultProducts);
-    return defaultProducts;
-  }
-  return JSON.parse(data);
+  return data ? JSON.parse(data) : [];
 };
 
-export const addProduct = async (product: Omit<Product, 'id'>) => {
+export const addProduct = async (product: Omit<Product, 'id'>): Promise<Product> => {
   const newProduct = {
     ...product,
     id: crypto.randomUUID()
   };
+  
+  if (navigator.onLine) {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{
+          name: newProduct.name,
+          stock: Number(newProduct.stock),
+          price: Number(newProduct.price),
+          unit: newProduct.unit
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      if (data) {
+        const products = await getProducts();
+        products.push(data as Product);
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+        return data as Product;
+      }
+    } catch (error) {
+      console.error('Error adding product:', error);
+    }
+  }
   
   const products = await getProducts();
   products.push(newProduct);
@@ -75,40 +98,39 @@ export const addProduct = async (product: Omit<Product, 'id'>) => {
 };
 
 export const removeProduct = async (id: string) => {
-  const products = await getProducts();
-  const updatedProducts = products.filter(product => product.id !== id);
-  await saveProducts(updatedProducts);
-  
   if (navigator.onLine) {
     try {
-      await supabase.from('products').delete().eq('id', id);
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('Error removing product:', error);
     }
   }
+  
+  const products = await getProducts();
+  const updatedProducts = products.filter(p => p.id !== id);
+  await saveProducts(updatedProducts);
 };
 
 // Sales
-export const saveSale = async (sale: Omit<Sale, 'id'>) => {
+export const saveSale = async (sale: Sale) => {
   const sales = await getSales();
-  const newSale = {
-    ...sale,
-    id: crypto.randomUUID()
-  };
-  sales.push(newSale);
+  sales.push(sale);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
   
-  // If online, sync immediately
   if (navigator.onLine) {
-    await syncSale(newSale);
+    await syncSale(sale);
   } else {
-    // Add to pending sync queue
     const pendingSync = JSON.parse(localStorage.getItem(STORAGE_KEYS.PENDING_SYNC) || '[]');
-    pendingSync.push(newSale);
+    pendingSync.push(sale);
     localStorage.setItem(STORAGE_KEYS.PENDING_SYNC, JSON.stringify(pendingSync));
   }
   
-  return newSale;
+  return sale;
 };
 
 export const getSales = async (): Promise<Sale[]> => {
@@ -120,8 +142,16 @@ export const getSales = async (): Promise<Sale[]> => {
         .order('timestamp', { ascending: false });
       
       if (!error && data) {
-        localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(data));
-        return data;
+        const sales = data.map(s => ({
+          id: s.id,
+          productId: s.product_id,
+          quantity: s.quantity,
+          amount: s.amount,
+          type: s.type,
+          timestamp: s.timestamp
+        }));
+        localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
+        return sales;
       }
     } catch (error) {
       console.error('Error fetching sales:', error);
@@ -135,14 +165,17 @@ export const getSales = async (): Promise<Sale[]> => {
 // Sync functions
 export const syncSale = async (sale: Sale) => {
   try {
-    const { error } = await supabase.from('sales').insert([{
-      ...sale,
-      amount: Number(sale.amount),
-      quantity: Number(sale.quantity)
-    }]);
+    const { error } = await supabase
+      .from('sales')
+      .insert([{
+        product_id: sale.productId,
+        quantity: Number(sale.quantity),
+        amount: Number(sale.amount),
+        type: sale.type,
+        timestamp: sale.timestamp
+      }]);
     
     if (!error) {
-      // Update local sale as synced
       const sales = await getSales();
       const updatedSales = sales.map(s => 
         s.id === sale.id ? { ...s, synced: true } : s
@@ -164,14 +197,6 @@ export const syncPendingSales = async () => {
   localStorage.setItem(STORAGE_KEYS.PENDING_SYNC, '[]');
 };
 
-// Add online/offline sync listeners
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => {
-    console.log('Back online, syncing pending sales...');
-    syncPendingSales();
-  });
-}
-
 // Daily Summaries
 export const saveDailySummary = async (summary: DailySummary) => {
   const summaries = await getDailySummaries();
@@ -180,12 +205,15 @@ export const saveDailySummary = async (summary: DailySummary) => {
   
   if (navigator.onLine) {
     try {
-      await supabase.from('daily_summaries').insert([{
-        ...summary,
-        total_sales: Number(summary.totalSales),
-        counter_sales: Number(summary.counterSales),
-        supply_sales: Number(summary.supplySales)
-      }]);
+      await supabase
+        .from('daily_summaries')
+        .insert([{
+          date: summary.date,
+          total_sales: Number(summary.totalSales),
+          counter_sales: Number(summary.counterSales),
+          supply_sales: Number(summary.supplySales),
+          products: summary.products
+        }]);
     } catch (error) {
       console.error('Error saving daily summary:', error);
     }
@@ -201,15 +229,15 @@ export const getDailySummaries = async (): Promise<DailySummary[]> => {
         .order('date', { ascending: false });
       
       if (!error && data) {
-        const formattedData = data.map(d => ({
+        const summaries = data.map(d => ({
           date: d.date,
           totalSales: d.total_sales,
           counterSales: d.counter_sales,
           supplySales: d.supply_sales,
           products: d.products
         }));
-        localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(formattedData));
-        return formattedData;
+        localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(summaries));
+        return summaries;
       }
     } catch (error) {
       console.error('Error fetching daily summaries:', error);

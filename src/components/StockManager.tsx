@@ -13,7 +13,11 @@ export function StockManager() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setProducts(getProducts());
+    const fetchProducts = async () => {
+      const fetchedProducts = await getProducts();
+      setProducts(fetchedProducts);
+    };
+    fetchProducts();
   }, []);
 
   const updateProduct = (id: string, field: keyof Product, value: string | number) => {
@@ -26,7 +30,7 @@ export function StockManager() {
     setProducts(updated);
   };
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.unit) {
       toast({
         title: "Error",
@@ -35,7 +39,7 @@ export function StockManager() {
       });
       return;
     }
-    const product = addProduct(newProduct);
+    const product = await addProduct(newProduct);
     setProducts([...products, product]);
     setNewProduct({ name: "", stock: 0, price: 0, unit: "" });
     toast({
@@ -44,8 +48,8 @@ export function StockManager() {
     });
   };
 
-  const handleRemoveProduct = (id: string) => {
-    removeProduct(id);
+  const handleRemoveProduct = async (id: string) => {
+    await removeProduct(id);
     setProducts(products.filter(p => p.id !== id));
     toast({
       title: "Product Removed",
@@ -53,8 +57,8 @@ export function StockManager() {
     });
   };
 
-  const saveChanges = () => {
-    saveProducts(products);
+  const saveChanges = async () => {
+    await saveProducts(products);
     toast({
       title: "Stock Updated",
       description: "The stock levels have been successfully updated.",
@@ -70,7 +74,7 @@ export function StockManager() {
 
       <div className="bg-white p-4 rounded-lg shadow-sm border">
         <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Input
             placeholder="Product Name"
             value={newProduct.name}
@@ -99,50 +103,52 @@ export function StockManager() {
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Product</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead>Price (₹)</TableHead>
-            <TableHead>Unit</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>
-                <Input
-                  type="number"
-                  value={product.stock}
-                  onChange={(e) => updateProduct(product.id, 'stock', e.target.value)}
-                  className="w-24"
-                />
-              </TableCell>
-              <TableCell>
-                <Input
-                  type="number"
-                  value={product.price}
-                  onChange={(e) => updateProduct(product.id, 'price', e.target.value)}
-                  className="w-24"
-                />
-              </TableCell>
-              <TableCell>{product.unit}</TableCell>
-              <TableCell>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleRemoveProduct(product.id)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </TableCell>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Product</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Price (₹)</TableHead>
+              <TableHead>Unit</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {products.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={product.stock}
+                    onChange={(e) => updateProduct(product.id, 'stock', e.target.value)}
+                    className="w-24"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    value={product.price}
+                    onChange={(e) => updateProduct(product.id, 'price', e.target.value)}
+                    className="w-24"
+                  />
+                </TableCell>
+                <TableCell>{product.unit}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleRemoveProduct(product.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

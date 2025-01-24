@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { DailySummary as DailySummaryType, Sale } from "@/types/inventory";
+import { DailySummary as DailySummaryType, Sale, Product } from "@/types/inventory";
 import { getProducts, getSales, saveDailySummary, exportToExcel } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +10,9 @@ export function DailySummary() {
   const { toast } = useToast();
   const [summary, setSummary] = useState<DailySummaryType | null>(null);
 
-  const generateSummary = () => {
-    const sales = getSales();
-    const products = getProducts();
+  const generateSummary = async () => {
+    const sales = await getSales();
+    const products = await getProducts();
     const today = new Date().toISOString().split('T')[0];
     
     // Filter today's sales
@@ -43,7 +43,7 @@ export function DailySummary() {
       products: productSummary
     };
 
-    saveDailySummary(summary);
+    await saveDailySummary(summary);
     setSummary(summary);
     
     toast({
