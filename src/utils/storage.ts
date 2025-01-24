@@ -60,62 +60,6 @@ export const getProducts = async (): Promise<Product[]> => {
   return data ? JSON.parse(data) : [];
 };
 
-export const addProduct = async (product: Omit<Product, 'id'>): Promise<Product> => {
-  const newProduct = {
-    ...product,
-    id: crypto.randomUUID()
-  };
-  
-  if (navigator.onLine) {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([{
-          name: newProduct.name,
-          stock: Number(newProduct.stock),
-          price: Number(newProduct.price),
-          unit: newProduct.unit
-        }])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      if (data) {
-        const products = await getProducts();
-        products.push(data as Product);
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-        return data as Product;
-      }
-    } catch (error) {
-      console.error('Error adding product:', error);
-    }
-  }
-  
-  const products = await getProducts();
-  products.push(newProduct);
-  await saveProducts(products);
-  return newProduct;
-};
-
-export const removeProduct = async (id: string) => {
-  if (navigator.onLine) {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error removing product:', error);
-    }
-  }
-  
-  const products = await getProducts();
-  const updatedProducts = products.filter(p => p.id !== id);
-  await saveProducts(updatedProducts);
-};
-
 // Sales
 export const saveSale = async (sale: Sale) => {
   const sales = await getSales();
@@ -142,12 +86,12 @@ export const getSales = async (): Promise<Sale[]> => {
         .order('timestamp', { ascending: false });
       
       if (!error && data) {
-        const sales = data.map(s => ({
+        const sales: Sale[] = data.map(s => ({
           id: s.id,
-          productId: s.product_id,
+          productId: s.product_id || '',
           quantity: s.quantity,
           amount: s.amount,
-          type: s.type,
+          type: s.type as 'counter' | 'supply',
           timestamp: s.timestamp
         }));
         localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));

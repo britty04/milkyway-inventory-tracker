@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Calendar } from "@/components/ui/calendar";
@@ -7,15 +7,32 @@ import { format } from "date-fns";
 import { getDailySummaries, getSales, getProducts } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Sale, Product } from "@/types/inventory";
 
 const Reports = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const summaries = getDailySummaries();
-  const sales = getSales();
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const isMobile = useIsMobile();
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [salesData, productsData] = await Promise.all([
+          getSales(),
+          getProducts()
+        ]);
+        setSales(salesData);
+        setProducts(productsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
   const getMonthlyTotal = () => {
-    if (!selectedDate) return 0;
+    if (!selectedDate || !sales) return 0;
     const currentMonth = selectedDate.getMonth();
     const currentYear = selectedDate.getFullYear();
     
@@ -29,6 +46,7 @@ const Reports = () => {
   };
 
   const getDailySales = (date: Date) => {
+    if (!sales) return [];
     return sales.filter(sale => 
       sale.timestamp.startsWith(format(date, 'yyyy-MM-dd'))
     );
@@ -88,7 +106,7 @@ const Reports = () => {
                     </TableHeader>
                     <TableBody>
                       {getDailySales(selectedDate).map((sale) => {
-                        const product = getProducts().find(p => p.id === sale.productId);
+                        const product = products.find(p => p.id === sale.productId);
                         return (
                           <TableRow key={sale.id}>
                             <TableCell>{format(new Date(sale.timestamp), 'HH:mm')}</TableCell>
