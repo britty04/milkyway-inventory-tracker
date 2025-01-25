@@ -106,9 +106,11 @@ export const saveProducts = (products: Product[]) => {
 
 export const addProduct = (product: Omit<Product, 'id'>) => {
   const products = getProducts();
-  const newProduct = {
+  const newProduct: Product = {
     ...product,
-    id: Date.now().toString()
+    id: `${Date.now()}`, // Convert to string to match Product type
+    stock: Number(product.stock),
+    price: Number(product.price)
   };
   products.push(newProduct);
   saveProducts(products);

@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { getDailySummaries, getSales } from "@/utils/storage";
+import { getDailySummaries, getSales, getProducts } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Reports = () => {
@@ -86,7 +86,8 @@ const Reports = () => {
                     </TableHeader>
                     <TableBody>
                       {getDailySales(selectedDate).map((sale) => {
-                        const product = getProducts().find(p => p.id === sale.productId);
+                        const products = getProducts();
+                        const product = products.find(p => p.id === sale.productId);
                         return (
                           <TableRow key={sale.id}>
                             <TableCell>{format(new Date(sale.timestamp), 'HH:mm')}</TableCell>

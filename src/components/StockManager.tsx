@@ -1,19 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Product } from "@/types/inventory";
 import { getProducts, saveProducts, addProduct, removeProduct } from "@/utils/storage";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Milk, IceCream, Package, ChevronDown } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { ProductForm } from "./ProductForm";
+import { ProductTable } from "./ProductTable";
+import { CategoryFilter } from "./CategoryFilter";
 
 export function StockManager() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,10 +19,10 @@ export function StockManager() {
   }, []);
 
   const categories = [
-    { id: "milk", name: "Milk Products", icon: <Milk className="w-5 h-5" /> },
-    { id: "curd", name: "Curd Products", icon: <Package className="w-5 h-5" /> },
-    { id: "ice-cream", name: "Ice Cream", icon: <IceCream className="w-5 h-5" /> },
-    { id: "dairy", name: "Other Dairy Products", icon: <Package className="w-5 h-5" /> },
+    { id: "milk", name: "Milk Products" },
+    { id: "curd", name: "Curd Products" },
+    { id: "ice-cream", name: "Ice Cream" },
+    { id: "dairy", name: "Other Dairy Products" },
   ];
 
   const updateProduct = (id: string, field: keyof Product, value: string | number) => {
@@ -79,7 +72,7 @@ export function StockManager() {
 
   const filteredProducts = selectedCategory === "all" 
     ? products 
-    : products.filter(p => p.category.toLowerCase() === selectedCategory);
+    : products.filter(p => p.category === selectedCategory);
 
   return (
     <div className="space-y-6">
@@ -88,125 +81,25 @@ export function StockManager() {
         <Button onClick={saveChanges}>Save Changes</Button>
       </div>
 
-      <Card className="bg-white">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Add New Product</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <Input
-              placeholder="Product Name"
-              value={newProduct.name}
-              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-              className="md:col-span-2"
-            />
-            <Input
-              type="number"
-              placeholder="Stock"
-              value={newProduct.stock}
-              onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })}
-            />
-            <Input
-              type="number"
-              placeholder="Price"
-              value={newProduct.price}
-              onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
-            />
-            <Select
-              value={newProduct.category}
-              onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      {category.icon}
-                      {category.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleAddProduct} className="w-full">
-              <Plus className="w-4 h-4 mr-2" /> Add Product
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <ProductForm
+        newProduct={newProduct}
+        setNewProduct={setNewProduct}
+        handleAddProduct={handleAddProduct}
+      />
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Button
-          variant={selectedCategory === "all" ? "default" : "outline"}
-          onClick={() => setSelectedCategory("all")}
-        >
-          All Products
-        </Button>
-        {categories.map((category) => (
-          <Button
-            key={category.id}
-            variant={selectedCategory === category.id ? "default" : "outline"}
-            onClick={() => setSelectedCategory(category.id)}
-            className="flex items-center gap-2"
-          >
-            {category.icon}
-            {category.name}
-          </Button>
-        ))}
-      </div>
+      <CategoryFilter
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+      />
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price (₹)</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>
-                    {categories.find(c => c.id === product.category)?.name || product.category}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.stock}
-                      onChange={(e) => updateProduct(product.id, 'stock', Number(e.target.value))}
-                      className="w-24"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={product.price}
-                      onChange={(e) => updateProduct(product.id, 'price', Number(e.target.value))}
-                      className="w-24"
-                    />
-                  </TableCell>
-                  <TableCell>{product.unit}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleRemoveProduct(product.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ProductTable
+            products={filteredProducts}
+            updateProduct={updateProduct}
+            handleRemoveProduct={handleRemoveProduct}
+            categories={categories}
+          />
         </CardContent>
       </Card>
     </div>
