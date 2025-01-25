@@ -4,6 +4,7 @@ export interface Product {
   stock: number;
   price: number;
   unit: string;
+  category: string;
 }
 
 export interface Sale {
