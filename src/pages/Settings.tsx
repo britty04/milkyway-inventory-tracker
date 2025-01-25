@@ -19,17 +19,17 @@ const Settings = () => {
     }
   };
 
-  const handleBackup = async () => {
-    const backup = await backupData();
+  const handleBackup = () => {
+    const backup = backupData();
     toast({
       title: "Backup Created",
-      description: `Backup created successfully at ${new Date().toLocaleString()}`,
+      description: `Backup created successfully at ${new Date(backup.timestamp).toLocaleString()}`,
     });
   };
 
-  const handleRestore = async () => {
+  const handleRestore = () => {
     if (confirm("Are you sure you want to restore from the last backup? Current data will be overwritten.")) {
-      const success = await restoreFromBackup();
+      const success = restoreFromBackup();
       if (success) {
         toast({
           title: "Restore Successful",

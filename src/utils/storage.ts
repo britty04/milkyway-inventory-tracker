@@ -1,201 +1,78 @@
 import { Product, Sale, DailySummary } from "@/types/inventory";
 import * as XLSX from 'xlsx';
-import { supabase } from "@/integrations/supabase/client";
 
-// Local Storage Keys
 const STORAGE_KEYS = {
   PRODUCTS: 'nayra_products',
   SALES: 'nayra_sales',
-  SUMMARIES: 'nayra_summaries',
-  PENDING_SYNC: 'nayra_pending_sync'
+  SUMMARIES: 'nayra_summaries'
 };
 
-// Products
-export const saveProducts = async (products: Product[]) => {
+export const saveProducts = (products: Product[]) => {
   localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-  
-  if (navigator.onLine) {
-    try {
-      const { error } = await supabase.from('products').upsert(
-        products.map(p => ({
-          id: p.id,
-          name: p.name,
-          price: Number(p.price),
-          stock: Number(p.stock),
-          unit: p.unit
-        }))
-      );
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error syncing products:', error);
-    }
-  }
 };
 
-export const getProducts = async (): Promise<Product[]> => {
-  if (navigator.onLine) {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-      
-      if (!error && data) {
-        const products = data.map(p => ({
-          id: p.id,
-          name: p.name,
-          stock: p.stock,
-          price: p.price,
-          unit: p.unit
-        }));
-        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-        return products;
-      }
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    }
-  }
-  
+export const getProducts = (): Product[] => {
   const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-  return data ? JSON.parse(data) : [];
+  if (!data) {
+    const defaultProducts: Product[] = [
+      { id: '1', name: 'Milk', stock: 100, price: 30, unit: 'packet' },
+      { id: '2', name: 'Curd', stock: 50, price: 25, unit: 'packet' },
+      { id: '3', name: 'Buttermilk', stock: 30, price: 15, unit: 'bottle' }
+    ];
+    saveProducts(defaultProducts);
+    return defaultProducts;
+  }
+  return JSON.parse(data);
 };
 
-// Sales
-export const saveSale = async (sale: Sale) => {
-  const sales = await getSales();
-  sales.push(sale);
+export const addProduct = (product: Omit<Product, 'id'>) => {
+  const products = getProducts();
+  const newProduct = {
+    ...product,
+    id: Date.now().toString() // Fixed: Convert timestamp to string
+  };
+  products.push(newProduct);
+  saveProducts(products);
+  return newProduct;
+};
+
+export const removeProduct = (id: string) => {
+  const products = getProducts();
+  const updatedProducts = products.filter(product => product.id !== id);
+  saveProducts(updatedProducts);
+};
+
+export const saveSale = (sale: Sale) => {
+  const sales = getSales();
+  const newSale = {
+    ...sale,
+    id: Date.now().toString() // Fixed: Convert timestamp to string
+  };
+  sales.push(newSale);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
-  
-  if (navigator.onLine) {
-    await syncSale(sale);
-  } else {
-    const pendingSync = JSON.parse(localStorage.getItem(STORAGE_KEYS.PENDING_SYNC) || '[]');
-    pendingSync.push(sale);
-    localStorage.setItem(STORAGE_KEYS.PENDING_SYNC, JSON.stringify(pendingSync));
-  }
-  
-  return sale;
+  return newSale;
 };
 
-export const getSales = async (): Promise<Sale[]> => {
-  if (navigator.onLine) {
-    try {
-      const { data, error } = await supabase
-        .from('sales')
-        .select('*')
-        .order('timestamp', { ascending: false });
-      
-      if (!error && data) {
-        const sales: Sale[] = data.map(s => ({
-          id: s.id,
-          productId: s.product_id || '',
-          quantity: s.quantity,
-          amount: s.amount,
-          type: s.type as 'counter' | 'supply',
-          timestamp: s.timestamp
-        }));
-        localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(sales));
-        return sales;
-      }
-    } catch (error) {
-      console.error('Error fetching sales:', error);
-    }
-  }
-  
+export const getSales = (): Sale[] => {
   const data = localStorage.getItem(STORAGE_KEYS.SALES);
   return data ? JSON.parse(data) : [];
 };
 
-// Sync functions
-export const syncSale = async (sale: Sale) => {
-  try {
-    const { error } = await supabase
-      .from('sales')
-      .insert([{
-        product_id: sale.productId,
-        quantity: Number(sale.quantity),
-        amount: Number(sale.amount),
-        type: sale.type,
-        timestamp: sale.timestamp
-      }]);
-    
-    if (!error) {
-      const sales = await getSales();
-      const updatedSales = sales.map(s => 
-        s.id === sale.id ? { ...s, synced: true } : s
-      );
-      localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(updatedSales));
-    }
-  } catch (error) {
-    console.error('Error syncing sale:', error);
-  }
-};
-
-export const syncPendingSales = async () => {
-  const pendingSync = JSON.parse(localStorage.getItem(STORAGE_KEYS.PENDING_SYNC) || '[]');
-  
-  for (const sale of pendingSync) {
-    await syncSale(sale);
-  }
-  
-  localStorage.setItem(STORAGE_KEYS.PENDING_SYNC, '[]');
-};
-
-// Daily Summaries
-export const saveDailySummary = async (summary: DailySummary) => {
-  const summaries = await getDailySummaries();
+export const saveDailySummary = (summary: DailySummary) => {
+  const summaries = getDailySummaries();
   summaries.push(summary);
   localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(summaries));
-  
-  if (navigator.onLine) {
-    try {
-      await supabase
-        .from('daily_summaries')
-        .insert([{
-          date: summary.date,
-          total_sales: Number(summary.totalSales),
-          counter_sales: Number(summary.counterSales),
-          supply_sales: Number(summary.supplySales),
-          products: summary.products
-        }]);
-    } catch (error) {
-      console.error('Error saving daily summary:', error);
-    }
-  }
 };
 
-export const getDailySummaries = async (): Promise<DailySummary[]> => {
-  if (navigator.onLine) {
-    try {
-      const { data, error } = await supabase
-        .from('daily_summaries')
-        .select('*')
-        .order('date', { ascending: false });
-      
-      if (!error && data) {
-        const summaries = data.map(d => ({
-          date: d.date,
-          totalSales: d.total_sales,
-          counterSales: d.counter_sales,
-          supplySales: d.supply_sales,
-          products: d.products
-        }));
-        localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(summaries));
-        return summaries;
-      }
-    } catch (error) {
-      console.error('Error fetching daily summaries:', error);
-    }
-  }
-  
+export const getDailySummaries = (): DailySummary[] => {
   const data = localStorage.getItem(STORAGE_KEYS.SUMMARIES);
   return data ? JSON.parse(data) : [];
 };
 
-// Export functionality
 export const exportToExcel = (summary: DailySummary) => {
   const wb = XLSX.utils.book_new();
   
+  // Create sales worksheet
   const salesData = [
     ['Date', summary.date],
     ['Total Sales', `₹${summary.totalSales}`],
@@ -212,15 +89,16 @@ export const exportToExcel = (summary: DailySummary) => {
   const ws = XLSX.utils.aoa_to_sheet(salesData);
   XLSX.utils.book_append_sheet(wb, ws, 'Daily Summary');
   
+  // Save the file
   XLSX.writeFile(wb, `sales-report-${summary.date}.xlsx`);
 };
 
-// Backup functionality
-export const backupData = async () => {
+// Add backup functionality
+export const backupData = () => {
   const backup = {
-    products: await getProducts(),
-    sales: await getSales(),
-    summaries: await getDailySummaries(),
+    products: getProducts(),
+    sales: getSales(),
+    summaries: getDailySummaries(),
     timestamp: new Date().toISOString()
   };
   
@@ -228,12 +106,12 @@ export const backupData = async () => {
   return backup;
 };
 
-export const restoreFromBackup = async () => {
+export const restoreFromBackup = () => {
   const backupData = localStorage.getItem('nayra_backup');
   if (!backupData) return false;
   
   const backup = JSON.parse(backupData);
-  await saveProducts(backup.products);
+  saveProducts(backup.products);
   localStorage.setItem(STORAGE_KEYS.SALES, JSON.stringify(backup.sales));
   localStorage.setItem(STORAGE_KEYS.SUMMARIES, JSON.stringify(backup.summaries));
   return true;

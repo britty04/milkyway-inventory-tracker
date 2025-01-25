@@ -1,38 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { getDailySummaries, getSales, getProducts } from "@/utils/storage";
+import { getDailySummaries, getSales } from "@/utils/storage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sale, Product } from "@/types/inventory";
 
 const Reports = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const isMobile = useIsMobile();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [salesData, productsData] = await Promise.all([
-          getSales(),
-          getProducts()
-        ]);
-        setSales(salesData);
-        setProducts(productsData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    fetchData();
-  }, []);
+  const summaries = getDailySummaries();
+  const sales = getSales();
 
   const getMonthlyTotal = () => {
-    if (!selectedDate || !sales) return 0;
+    if (!selectedDate) return 0;
     const currentMonth = selectedDate.getMonth();
     const currentYear = selectedDate.getFullYear();
     
@@ -46,7 +27,6 @@ const Reports = () => {
   };
 
   const getDailySales = (date: Date) => {
-    if (!sales) return [];
     return sales.filter(sale => 
       sale.timestamp.startsWith(format(date, 'yyyy-MM-dd'))
     );
@@ -56,9 +36,9 @@ const Reports = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <main className="flex-1 p-4 md:p-6 space-y-6 overflow-x-hidden">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="col-span-full md:col-span-1">
+            <Card>
               <CardHeader>
                 <CardTitle>Monthly Total</CardTitle>
               </CardHeader>
@@ -70,7 +50,7 @@ const Reports = () => {
               </CardContent>
             </Card>
 
-            <Card className={`${isMobile ? 'col-span-full' : 'md:col-span-1'}`}>
+            <Card>
               <CardHeader>
                 <CardTitle>Calendar View</CardTitle>
               </CardHeader>
@@ -93,7 +73,7 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -106,7 +86,7 @@ const Reports = () => {
                     </TableHeader>
                     <TableBody>
                       {getDailySales(selectedDate).map((sale) => {
-                        const product = products.find(p => p.id === sale.productId);
+                        const product = getProducts().find(p => p.id === sale.productId);
                         return (
                           <TableRow key={sale.id}>
                             <TableCell>{format(new Date(sale.timestamp), 'HH:mm')}</TableCell>
