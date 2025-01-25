@@ -108,7 +108,7 @@ export const addProduct = (product: Omit<Product, 'id'>) => {
   const products = getProducts();
   const newProduct: Product = {
     ...product,
-    id: `${Date.now()}`, // Convert to string to match Product type
+    id: `${Date.now()}`,
     stock: Number(product.stock),
     price: Number(product.price)
   };
