@@ -17,6 +17,10 @@
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true
+    "createDesktopShortcut": true,
+    "installerIcon": "public/favicon.ico",
+    "uninstallerIcon": "public/favicon.ico",
+    "license": "LICENSE",
+    "shortcutName": "Nayra Milk Agencies"
   }
 }
